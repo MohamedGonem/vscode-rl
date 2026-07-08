@@ -9,6 +9,7 @@
     { "include": "#keywords" },
     { "include": "#types" },
     { "include": "#literals" },
+    { "include": "#match" },
     { "include": "#functions" },
     { "include": "#operators" },
     { "include": "#punctuation" },
@@ -27,12 +28,23 @@
       "patterns": [
         {
           "name": "meta.attribute.rl",
-          "match": "(!#)\\s*(\\[)\\s*([a-zA-Z_][a-zA-Z0-9_]*)",
-          "captures": {
+          "begin": "(!#)\\s*(\\[)",
+          "beginCaptures": {
             "1": { "name": "keyword.operator.bang.rl" },
-            "2": { "name": "punctuation.bracket.rl" },
-            "3": { "name": "entity.name.tag.rl" }
-          }
+            "2": { "name": "punctuation.bracket.rl" }
+          },
+          "end": "(\\])",
+          "endCaptures": {
+            "1": { "name": "punctuation.bracket.rl" }
+          },
+          "patterns": [
+            {
+              "name": "entity.name.tag.rl",
+              "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b"
+            },
+            { "include": "#literals" },
+            { "include": "#punctuation" }
+          ]
         }
       ]
     },
@@ -40,11 +52,11 @@
       "patterns": [
         {
           "name": "keyword.control.rl",
-          "match": "\\b(if|else|while|for|in|return|break|continue)\\b"
+          "match": "\\b(if|else|while|for|in|return|match|break|continue)\\b"
         },
         {
           "name": "keyword.declaration.rl",
-          "match": "\\b(fn|dec|CONST|arr|const)\\b"
+          "match": "\\b(fn|dec|CONST|tag|record)\\b"
         },
         {
           "name": "keyword.import.rl",
@@ -60,7 +72,45 @@
       "patterns": [
         {
           "name": "support.type.builtin.rl",
-          "match": "\\b(int|float|bool|string|char|arr)\\b"
+          "match": "\\b(int|float|bool|string|char|arr|set|map)\\b"
+        },
+        {
+          "comment": "tag Name { ... } / record Name { ... } declaration name",
+          "match": "\\b(tag|record)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.rl" },
+            "2": { "name": "entity.name.type.rl" }
+          }
+        },
+        {
+          "comment": "type in declaration position: dec Type name = ..., CONST Type name = ...",
+          "match": "\\b(dec|CONST)\\s+([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+          "captures": {
+            "1": { "name": "keyword.declaration.rl" },
+            "2": { "name": "entity.name.type.rl" }
+          }
+        },
+        {
+          "comment": "arr[Type], set[Type], map[Key, Value] element/key/value types",
+          "match": "\\b(arr|set|map)(\\[)",
+          "captures": {
+            "1": { "name": "support.type.builtin.rl" },
+            "2": { "name": "punctuation.bracket.rl" }
+          }
+        },
+        {
+          "comment": "PascalCase identifier used as a type name (struct literal, variant tag, type reference)",
+          "name": "entity.name.type.rl",
+          "match": "\\b[A-Z][a-zA-Z0-9_]*\\b(?=\\s*\\{)"
+        },
+        {
+          "comment": "Tag.Variant  (variant_pattern / enum-style field access)",
+          "match": "\\b([A-Z][a-zA-Z0-9_]*)(\\.)([a-zA-Z_][a-zA-Z0-9_]*)\\b",
+          "captures": {
+            "1": { "name": "entity.name.type.rl" },
+            "2": { "name": "punctuation.delimiter.rl" },
+            "3": { "name": "variable.other.enummember.rl" }
+          }
         }
       ]
     },
@@ -106,6 +156,18 @@
         }
       ]
     },
+    "match": {
+      "patterns": [
+        {
+          "name": "constant.language.wildcard.rl",
+          "match": "(?<![a-zA-Z0-9_])_(?![a-zA-Z0-9_])"
+        },
+        {
+          "name": "keyword.operator.arrow.rl",
+          "match": "=>"
+        }
+      ]
+    },
     "functions": {
       "patterns": [
         {
@@ -128,6 +190,14 @@
           "match": "\\.([a-zA-Z_][a-zA-Z0-9_]*)\\s*(?=\\()",
           "captures": {
             "1": { "name": "entity.name.function.method.rl" }
+          }
+        },
+        {
+          "comment": "field access: expr.field (non-call, non-enum-variant)",
+          "match": "(\\.)([a-z_][a-zA-Z0-9_]*)\\b(?!\\s*\\()",
+          "captures": {
+            "1": { "name": "punctuation.delimiter.rl" },
+            "2": { "name": "variable.other.property.rl" }
           }
         }
       ]
@@ -157,6 +227,10 @@
         {
           "name": "keyword.operator.path.rl",
           "match": "::"
+        },
+        {
+          "name": "keyword.operator.propagate.rl",
+          "match": "\\?"
         },
         {
           "name": "keyword.operator.bang.rl",
